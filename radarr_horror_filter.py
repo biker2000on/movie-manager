@@ -18,6 +18,16 @@ from filter import GenreFilter
 from deleter import MovieDeleter
 from keep_list import KeepListManager
 
+# Optional dependency for interactive selection
+try:
+    import questionary
+    from questionary import Choice
+    QUESTIONARY_AVAILABLE = True
+except ImportError:
+    questionary = None  # type: ignore
+    Choice = None  # type: ignore
+    QUESTIONARY_AVAILABLE = False
+
 console = Console()
 
 
@@ -73,6 +83,71 @@ def display_movies_table(movies: List[Dict[str, Any]], verbose: bool = False, ke
     if verbose:
         total_size = sum(movie.get('sizeOnDisk', 0) for movie in movies)
         console.print(f"\n[bold]Total: {len(movies)} movies, {bytes_to_gb(total_size)}[/bold]")
+
+
+def interactive_keep_selection(
+    movies: List[Dict[str, Any]],
+    keep_list: KeepListManager
+) -> List[Dict[str, Any]]:
+    """
+    Display interactive checkbox for selecting movies to keep.
+
+    Args:
+        movies: List of movie dictionaries from Radarr
+        keep_list: KeepListManager instance
+
+    Returns:
+        List of newly selected movies (excludes already-kept)
+
+    Raises:
+        RuntimeError: If questionary is not installed
+    """
+    if not QUESTIONARY_AVAILABLE:
+        raise RuntimeError(
+            "Interactive selection requires the 'questionary' package. "
+            "Install it with: pip install questionary"
+        )
+
+    if not movies:
+        return []
+
+    choices = []
+    for movie in movies:
+        movie_id = movie.get('id')
+        title = movie.get('title', 'Unknown')
+        year = movie.get('year', 'N/A')
+        is_already_kept = keep_list.is_kept(movie_id)
+
+        display = f"{title} ({year})"
+        if is_already_kept:
+            display = f"{title} ({year}) [already kept]"
+
+        choices.append(Choice(
+            title=display,
+            value=movie,
+            checked=is_already_kept
+        ))
+
+    console.print("\n[bold cyan]Select movies to add to keep list:[/bold cyan]")
+    console.print("[dim]Use arrow keys to navigate, Space to select, Enter to confirm[/dim]\n")
+
+    selected = questionary.checkbox(
+        "",
+        choices=choices,
+        instruction="(Space to toggle, Enter to confirm)"
+    ).ask()
+
+    # User cancelled (Ctrl+C)
+    if selected is None:
+        return []
+
+    # Filter out movies that were already kept
+    newly_selected = [
+        m for m in selected
+        if not keep_list.is_kept(m.get('id'))
+    ]
+
+    return newly_selected
 
 
 def get_confirmation(
@@ -152,6 +227,22 @@ def cmd_scan(args: argparse.Namespace) -> int:
         kept_count = sum(1 for m in filtered_movies if keep_list.is_kept(m.get('id')))
         if kept_count > 0:
             console.print(f"[yellow]{kept_count} movies in keep list[/yellow]")
+
+        # Interactive keep selection
+        if args.interactive:
+            try:
+                newly_kept = interactive_keep_selection(filtered_movies, keep_list)
+
+                if newly_kept:
+                    for movie in newly_kept:
+                        keep_list.add(movie['id'], movie['title'])
+                        console.print(f"[green]Added to keep list: {movie['title']}[/green]")
+                    console.print(f"\n[bold green]Added {len(newly_kept)} movies to keep list[/bold green]")
+                else:
+                    console.print("[yellow]No new movies selected[/yellow]")
+            except RuntimeError as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+                return 1
 
         # Show statistics
         stats = genre_filter.get_statistics(all_movies, filtered_movies)
@@ -437,6 +528,11 @@ def main() -> int:
         '--verbose', '-v',
         action='store_true',
         help='Show detailed output'
+    )
+    scan_parser.add_argument(
+        '--interactive', '-i',
+        action='store_true',
+        help='Interactively select movies to add to keep list'
     )
 
     # Delete command

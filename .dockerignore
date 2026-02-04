@@ -1,0 +1,48 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Test files (not needed in production)
+test_*.py
+tests/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Keep list (mounted as volume)
+.keep-list.json
+
+# Documentation (not needed at runtime)
+README.md
+*.md
+!requirements*.md
+
+# Lock files (we use pyproject.toml)
+uv.lock
+
+# OMC orchestration files
+.omc/

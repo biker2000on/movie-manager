@@ -1,3 +1,4 @@
+import os
 import json
 from datetime import datetime
 from pathlib import Path
@@ -7,13 +8,16 @@ from typing import List, Dict, Optional
 class KeepListManager:
     """Manages a keep list of movies that should not be deleted."""
 
-    def __init__(self, file_path: str = ".keep-list.json"):
+    def __init__(self, file_path: Optional[str] = None):
         """
         Initialize the KeepListManager.
 
         Args:
-            file_path: Path to the JSON file storing the keep list (default: ".keep-list.json")
+            file_path: Path to the JSON file storing the keep list.
+                       If None, uses KEEP_LIST_PATH env var or defaults to ".keep-list.json"
         """
+        if file_path is None:
+            file_path = os.environ.get('KEEP_LIST_PATH', '.keep-list.json')
         self.file_path = Path(file_path)
         self.movies = []
         self.load()

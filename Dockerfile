@@ -8,6 +8,13 @@ RUN pip install --no-cache-dir --target=/app/deps -r requirements.txt
 # Production stage
 FROM python:3.11-slim
 
+# OCI Labels for GitHub Container Registry (ghcr.io)
+LABEL org.opencontainers.image.source="https://github.com/biker2000on/movie-manager"
+LABEL org.opencontainers.image.description="Radarr Horror Filter - CLI tool to scan and delete horror movies from Radarr"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="movie-manager"
+LABEL org.opencontainers.image.vendor="biker2000on"
+
 # Install bash for entrypoint script
 RUN apt-get update && apt-get install -y --no-install-recommends bash \
     && rm -rf /var/lib/apt/lists/*

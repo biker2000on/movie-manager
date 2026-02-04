@@ -1,0 +1,89 @@
+# TrueNAS SCALE 25.10+ compatible Docker Compose
+# Deploy via Apps > Discover > Install via YAML
+#
+# NETWORK CONFIGURATION:
+# This container needs to reach Radarr. Options:
+# 1. If Radarr is a TrueNAS app: Join its network (see network_mode below)
+# 2. If Radarr is on host network: Use host IP (e.g., 192.168.1.100:7878)
+# 3. If Radarr is external: Use its IP/hostname directly
+
+services:
+  movie-manager:
+    # FOR LOCAL DEVELOPMENT: Build from source
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # FOR TRUENAS DEPLOYMENT: Use pre-built image instead of build:
+    # image: your-registry.com/movie-manager:latest
+    # OR for local TrueNAS build:
+    # image: movie-manager:latest
+
+    container_name: movie-manager
+
+    # Environment variables for Radarr connection
+    # RADARR_URL options:
+    #   - http://radarr:7878          (if sharing network with Radarr container)
+    #   - http://192.168.1.100:7878   (if Radarr on host/different machine)
+    #   - http://radarr.local:7878    (if using DNS/mDNS)
+    environment:
+      - RADARR_URL=${RADARR_URL:-http://radarr:7878}
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - KEEP_LIST_PATH=/data/.keep-list.json
+      - TZ=${TZ:-America/New_York}
+
+    # Persistent storage for keep list
+    # Using host path mount for TrueNAS (more reliable than named volumes)
+    volumes:
+      # Option 1: Host path (RECOMMENDED for TrueNAS)
+      # Create directory first: mkdir -p /mnt/tank/apps/movie-manager/data
+      - /mnt/tank/apps/movie-manager/data:/data
+
+      # Option 2: Named volume (alternative)
+      # - movie-manager-data:/data
+
+    # NETWORK CONFIGURATION - Choose ONE option:
+    #
+    # OPTION 1: Join Radarr's network (if Radarr is a TrueNAS Docker app)
+    # First, find Radarr's network: docker network ls | grep radarr
+    # Then uncomment and set:
+    # network_mode: "container:radarr"
+    # OR
+    # networks:
+    #   - radarr_default
+    #
+    # OPTION 2: Use host network (simplest, access all services on host)
+    # network_mode: host
+    #
+    # OPTION 3: Bridge network (default, use IP addresses for RADARR_URL)
+    networks:
+      - default
+
+    # Container remains available for cron execution
+    # Using tail -f /dev/null to keep container running
+    command: ["bash", "-c", "tail -f /dev/null"]
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Resource limits (optional, adjust as needed)
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+
+# Uncomment if using named volume instead of host path
+# volumes:
+#   movie-manager-data:
+#     driver: local
+
+networks:
+  default:
+    name: movie-manager-network
+
+# To join Radarr's network (if it exists), uncomment:
+# networks:
+#   radarr_default:
+#     external: true

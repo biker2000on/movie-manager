@@ -1,0 +1,12 @@
+{
+  "active": false,
+  "mode": "ralplan",
+  "iteration": 1,
+  "max_iterations": 5,
+  "plan_path": ".omc/plans/keep-list-feature.md",
+  "current_phase": "complete",
+  "started_at": "2026-02-03T13:00:00.000Z",
+  "completed_at": "2026-02-03T13:30:00.000Z",
+  "task_description": "Add a 'keep list' feature to mark specific horror movies that should NOT be deleted, even though they match the horror filter. Users need a way to whitelist movies they want to keep.",
+  "verdict": "OKAY"
+}

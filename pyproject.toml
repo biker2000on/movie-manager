@@ -1,0 +1,25 @@
+[project]
+name = "radarr-horror-filter"
+version = "1.0.0"
+description = "CLI tool to filter and delete horror movies from Radarr"
+requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.28.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-mock>=3.10.0",
+]
+
+[project.scripts]
+radarr-filter = "radarr_horror_filter:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-mock>=3.14.1",
+]
